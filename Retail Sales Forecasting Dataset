@@ -1,0 +1,80 @@
+# This Python 3 environment comes with many helpful analytics libraries installed
+# It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python
+# For example, here's several helpful packages to load
+
+import numpy as np # linear algebra
+import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+
+# Input data files are available in the read-only "../input/" directory
+# For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory
+
+import os
+for dirname, _, filenames in os.walk('/kaggle/input'):
+    for filename in filenames:
+        print(os.path.join(dirname, filename))
+
+# You can write up to 20GB to the current directory (/kaggle/working/) that gets preserved as output when you create a version using "Save & Run All" 
+# You can also write temporary files to /kaggle/temp/, but they won't be saved outside of the current session
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as mpp
+import seaborn as sb
+%matplotlib inline
+data=pd.read_csv("../input/retail-sales-forecasting/mock_kaggle.csv")
+data
+data.head()
+data.info()
+data.describe()
+data.tail()
+data.isnull()
+data.isnull().sum()
+data.shape
+data.columns
+data = data.rename(columns = {'data':'Date', 
+                              'venda': 'Sales', 
+                              'estoque': 'Stock', 
+                              'preco': 'Price'})
+data.head()
+data.info()
+data.tail()
+data.describe()
+data.isnull().sum()
+# Here the data has features Sales, Stock, Price datewise. We added Revenue as new feature in addition to splitting the date column into day, month and year.
+data['Date'] = pd.to_datetime(data['Date'])
+data['Day'] = data['Date'].dt.day
+data['Month'] = data['Date'].dt.month
+data['Year'] = data['Date'].dt.year
+data['Revenue'] = data['Sales'] * data['Price']
+data.info()
+data.describe()
+data.tail()
+data.set_index('Date', inplace=True)
+data['Sales'].plot(figsize = (15,5), legend = True)
+data['Stock'].plot(figsize = (15,5), legend = True)
+data['Price'].plot(figsize = (15,5), legend = True)
+data['Revenue'].plot(figsize = (15,5), legend = True)
+# **from the above plots we can say that there is no trend but there is seasonality**
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+plot_acf(data['Sales'], lags = 30, title='Autocorrelation for Sales', zero=False, auto_ylims=True)
+mpp.show()
+plot_pacf(data['Sales'], lags = 30, title='Partial Autocorrelation for Sales', zero=False, auto_ylims=True)
+mpp.show()
+# Since the data has no significant trend but there is seasonality we can opt for models like Holt Winters Exponential Smoothing(seasonality).
+import statsmodels.tsa.stattools as sts
+sts.adfuller(data['Sales'])
+sts.adfuller(data['Stock'])
+sts.adfuller(data['Price'])
+sts.adfuller(data['Revenue'])
+# Here our target variable is Sales and we need to forecast sales hence from now we will only focus on Sales column
+from statsmodels.tsa.seasonal import seasonal_decompose
+sd_sales = seasonal_decompose(data['Sales'], model='additive', period = 7)
+sd_sales.plot()
+mpp.show()
+sd_sales.trend.plot(figsize = (40,15))   
+data['Sales_Shift'] = data['Sales'].shift(periods = 1)
+data.head()
+data.tail()
+data.describe()
+data.isnull().sum()
+data['diff'] = data['Sales']-data['Sales_Shift']
+data['diff'].plot()   
